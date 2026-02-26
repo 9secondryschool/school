@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -7,126 +8,167 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
 
 <style>
-body{font-family:'Cairo',sans-serif;background:#f5f7fb;margin:0;padding:20px}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-button{cursor:pointer}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px}
-.card{background:white;padding:15px;border-radius:15px;box-shadow:0 5px 15px rgba(0,0,0,.08)}
-.search input{width:100%;padding:10px;border-radius:10px;border:none;box-shadow:0 5px 15px rgba(0,0,0,.08)}
-.list .item{background:white;padding:15px;border-radius:12px;margin-top:10px;display:flex;justify-content:space-between;box-shadow:0 5px 15px rgba(0,0,0,.08)}
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
-.modal-content{background:white;padding:20px;border-radius:12px;width:300px}
-.modal-content input,.modal-content select{width:100%;padding:8px;margin-bottom:10px}
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --primary:#2b7cff;
+  --text:#1f2937;
+  --sub:#6b7280;
+  --shadow:0 6px 16px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;font-family:'Cairo',sans-serif;}
+body{background:var(--bg);margin:0;padding:20px;}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;}
+.title h2{margin:0;color:var(--text);}
+.title p{margin:5px 0 0;color:var(--sub);font-size:14px;}
+.actions button{border:none;padding:12px;margin-right:8px;border-radius:12px;cursor:pointer;font-size:18px;}
+.add{background:var(--primary);color:white;}
+.menu{background:#e5e7eb;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:15px;margin-bottom:20px;}
+.card{background:var(--card);border-radius:18px;padding:18px;box-shadow:var(--shadow);min-height:130px;}
+.card h3{margin:10px 0 0;font-size:26px;}
+.card p{margin:0;color:var(--sub);}
+.search{background:white;border-radius:14px;padding:12px;box-shadow:var(--shadow);margin-bottom:15px;}
+.search input{border:none;width:100%;font-size:15px;outline:none;}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:25px;}
+.chip{padding:8px 14px;border-radius:20px;background:#e5e7eb;cursor:pointer;font-size:14px;}
+.chip.active{background:var(--primary);color:white;}
+.list .item{background:white;padding:15px;border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;}
+.list small{color:var(--sub);}
+.empty{text-align:center;margin-top:80px;color:#facc15;font-size:70px;}
+.empty p{font-size:16px;color:var(--sub);}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;}
+.modal-content{background:white;padding:20px;border-radius:16px;width:90%;max-width:400px;}
+.modal-content input,.modal-content select{width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #ddd;}
+.modal-content button{width:100%;padding:10px;border:none;border-radius:8px;background:var(--primary);color:white;cursor:pointer;}
+.delete{background:red;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;}
 </style>
 </head>
 <body>
 
 <div class="header">
-<h2>لوحة مبادرات المدرسة</h2>
-<button onclick="openModal()">＋ إضافة</button>
+  <div class="title">
+    <h2>لوحة مبادرات المدرسة</h2>
+    <p>إدارة ومتابعة المبادرات</p>
+  </div>
+  <div class="actions">
+    <button class="add" onclick="openModal()">＋</button>
+  </div>
 </div>
 
 <div class="stats">
-<div class="card"><h3 id="total">0</h3><p>إجمالي</p></div>
-<div class="card"><h3 id="active">0</h3><p>نشطة</p></div>
+  <div class="card"><h3 id="activeCount">0</h3><p>نشطة</p></div>
+  <div class="card"><h3 id="totalCount">0</h3><p>إجمالي المبادرات</p></div>
+  <div class="card"><h3 id="avgProgress">%0</h3><p>متوسط الإنجاز</p></div>
+  <div class="card"><h3 id="teacherCount">0</h3><p>معلمات مشاركات</p></div>
 </div>
 
 <div class="search">
-<input type="text" id="search" placeholder="بحث..." oninput="render()">
+  <input type="text" id="searchInput" placeholder="ابحث عن مبادرة..." oninput="render()">
+</div>
+
+<div class="filters">
+  <div class="chip active" onclick="setFilter('الكل',this)">الكل</div>
+  <div class="chip" onclick="setFilter('نشطة',this)">نشطة</div>
+  <div class="chip" onclick="setFilter('مخططة',this)">مخططة</div>
+  <div class="chip" onclick="setFilter('مكتملة',this)">مكتملة</div>
 </div>
 
 <div class="list" id="list"></div>
 
+<div class="empty" id="emptyState">
+  ⭐
+  <p>لا توجد مبادرات حالياً</p>
+</div>
+
+<!-- Modal -->
 <div class="modal" id="modal">
-<div class="modal-content">
-<input id="title" placeholder="اسم المبادرة">
-<input id="teacher" placeholder="اسم المعلمة">
-<input id="progress" type="number" placeholder="نسبة الإنجاز">
-<select id="status">
-<option value="نشطة">نشطة</option>
-<option value="مخططة">مخططة</option>
-<option value="مكتملة">مكتملة</option>
-</select>
-<button onclick="addData()">حفظ</button>
+  <div class="modal-content">
+    <input type="text" id="title" placeholder="اسم المبادرة">
+    <input type="text" id="teacher" placeholder="اسم المعلمة">
+    <input type="number" id="progress" placeholder="نسبة الإنجاز %" min="0" max="100">
+    <select id="status">
+      <option value="نشطة">نشطة</option>
+      <option value="مخططة">مخططة</option>
+      <option value="مكتملة">مكتملة</option>
+    </select>
+    <button onclick="addInitiative()">حفظ</button>
+  </div>
 </div>
-</div>
 
-<script type="module">
+<script>
+let initiatives = JSON.parse(localStorage.getItem("initiatives")) || [];
+let currentFilter = "الكل";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+function openModal(){ document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAp72WZAumRsHaGTz8cFuztWK9p1bPJhYE",
-  authDomain: "school-initiatves.firebaseapp.com",
-  projectId: "school-initiatves",
-  storageBucket: "school-initiatves.firebasestorage.app",
-  messagingSenderId: "1076583507246",
-  appId: "1:1076583507246:web:66c642ff336437af1dc6bf"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-window.openModal = ()=>document.getElementById("modal").style.display="flex";
-window.closeModal = ()=>document.getElementById("modal").style.display="none";
-
-window.addData = async ()=>{
+function addInitiative(){
   const title=document.getElementById("title").value;
   const teacher=document.getElementById("teacher").value;
   const progress=parseInt(document.getElementById("progress").value)||0;
   const status=document.getElementById("status").value;
-
   if(!title||!teacher)return alert("أكملي البيانات");
-
-  await addDoc(collection(db,"initiatives"),{
-    title,teacher,progress,status
-  });
-
+  initiatives.push({title,teacher,progress,status});
+  localStorage.setItem("initiatives",JSON.stringify(initiatives));
   closeModal();
-  loadData();
-};
-
-async function loadData(){
-  const querySnapshot = await getDocs(collection(db,"initiatives"));
-  window.data=[];
-  querySnapshot.forEach(docSnap=>{
-    window.data.push({...docSnap.data(),id:docSnap.id});
-  });
   render();
 }
 
-window.render = ()=>{
+function deleteItem(index){
+  initiatives.splice(index,1);
+  localStorage.setItem("initiatives",JSON.stringify(initiatives));
+  render();
+}
+
+function setFilter(filter,el){
+  currentFilter=filter;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  render();
+}
+
+function render(){
   const list=document.getElementById("list");
+  const search=document.getElementById("searchInput").value;
   list.innerHTML="";
-  const search=document.getElementById("search").value||"";
+  let filtered=initiatives.filter(i=>
+    (currentFilter==="الكل"||i.status===currentFilter) &&
+    i.title.includes(search)
+  );
 
-  const filtered=window.data.filter(i=>i.title.includes(search));
-
-  filtered.forEach(item=>{
+  filtered.forEach((item,index)=>{
     list.innerHTML+=`
-    <div class="item">
-      <div>
-      <strong>${item.title}</strong><br>
-      ${item.teacher} - ${item.status} - ${item.progress}%
+      <div class="item">
+        <div>
+          <strong>${item.title}</strong><br>
+          <small>${item.teacher} - ${item.status} - ${item.progress}%</small>
+        </div>
+        <button class="delete" onclick="deleteItem(${index})">حذف</button>
       </div>
-      <button onclick="deleteItem('${item.id}')">حذف</button>
-    </div>`;
+    `;
   });
 
-  document.getElementById("total").innerText=window.data.length;
-  document.getElementById("active").innerText=
-  window.data.filter(i=>i.status==="نشطة").length;
-};
+  document.getElementById("emptyState").style.display=
+    filtered.length===0?"block":"none";
 
-window.deleteItem = async(id)=>{
-  await deleteDoc(doc(db,"initiatives",id));
-  loadData();
-};
+  updateStats();
+}
 
-loadData();
+function updateStats(){
+  document.getElementById("totalCount").innerText=initiatives.length;
+  document.getElementById("activeCount").innerText=
+    initiatives.filter(i=>i.status==="نشطة").length;
 
+  let avg=initiatives.length?
+    Math.round(initiatives.reduce((a,b)=>a+b.progress,0)/initiatives.length):0;
+  document.getElementById("avgProgress").innerText="%"+avg;
+
+  let teachers=[...new Set(initiatives.map(i=>i.teacher))];
+  document.getElementById("teacherCount").innerText=teachers.length;
+}
+
+render();
 </script>
 
 </body>
